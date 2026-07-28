@@ -1,0 +1,319 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Helpers
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    
+    function incoming() { 
+      return request.resource.data; 
+    }
+    
+    function existing() { 
+      return resource.data; 
+    }
+
+    // Entity Validations
+    function isValidUser(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.username is string && data.username.size() <= 100
+        && data.passwordHash is string && data.passwordHash.size() <= 100
+        && data.role is string && (data.role == 'admin' || data.role == 'collector' || data.role == 'manager' || data.role == 'accountant' || data.role == 'data_entry')
+        && data.name is string && data.name.size() <= 100
+        && data.status is string && (data.status == 'active' || data.status == 'suspended')
+        && data.permissions is list
+        && data.createdAt is string && data.createdAt.size() <= 50
+        && (!('phone' in data) || data.phone is string)
+        && (!('address' in data) || data.address is string)
+        && (!('notes' in data) || data.notes is string)
+        && (!('hasInternet' in data) || data.hasInternet is bool)
+        && data.keys().hasAll(['id', 'username', 'passwordHash', 'role', 'name', 'status', 'permissions', 'createdAt']);
+    }
+
+    function isValidSubscriber(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.name is string && data.name.size() <= 100
+        && data.phone is string && data.phone.size() <= 50
+        && data.meterNumber is string && data.meterNumber.size() <= 100
+        && data.zone is string && data.zone.size() <= 100
+        && data.tariffType is string && (data.tariffType == 'residential' || data.tariffType == 'commercial' || data.tariffType == 'industrial')
+        && data.status is string && (data.status == 'active' || data.status == 'suspended')
+        && data.initialReading is number
+        && data.currentReading is number
+        && data.currentBalance is number
+        && (!('openingBalance' in data) || data.openingBalance is number)
+        && data.createdAt is string && data.createdAt.size() <= 50
+        && data.keys().hasAll(['id', 'name', 'phone', 'meterNumber', 'zone', 'tariffType', 'status', 'initialReading', 'currentReading', 'currentBalance', 'createdAt']);
+    }
+
+    function isValidMeterReading(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.subscriberId is string && data.subscriberId.size() <= 100
+        && data.subscriberName is string && data.subscriberName.size() <= 100
+        && data.meterNumber is string && data.meterNumber.size() <= 100
+        && data.previousReading is number
+        && data.currentReading is number
+        && data.consumption is number
+        && data.ratePerKwh is number
+        && data.fixedFee is number
+        && data.taxAmount is number
+        && data.totalAmount is number
+        && data.billingMonth is string && data.billingMonth.size() <= 20
+        && data.readingDate is string && data.readingDate.size() <= 50
+        && data.enteredBy is string && data.enteredBy.size() <= 100
+        && data.isPosted is bool
+        && (!('postedDate' in data) || data.postedDate == null || data.postedDate is string)
+        && data.keys().hasAll(['id', 'subscriberId', 'subscriberName', 'meterNumber', 'previousReading', 'currentReading', 'consumption', 'ratePerKwh', 'fixedFee', 'taxAmount', 'totalAmount', 'billingMonth', 'readingDate', 'enteredBy', 'isPosted']);
+    }
+
+    function isValidPayment(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.subscriberId is string && data.subscriberId.size() <= 100
+        && data.subscriberName is string && data.subscriberName.size() <= 100
+        && data.amountPaid is number
+        && data.paymentDate is string && data.paymentDate.size() <= 50
+        && data.paymentMethod is string && (data.paymentMethod == 'cash' || data.paymentMethod == 'transfer' || data.paymentMethod == 'e-wallet')
+        && data.receivedBy is string && data.receivedBy.size() <= 100
+        && data.receiptNumber is string && data.receiptNumber.size() <= 100
+        && data.isPosted is bool
+        && (!('postedDate' in data) || data.postedDate == null || data.postedDate is string)
+        && data.keys().hasAll(['id', 'subscriberId', 'subscriberName', 'amountPaid', 'paymentDate', 'paymentMethod', 'receivedBy', 'receiptNumber', 'isPosted']);
+    }
+
+    function isValidSystemSettings(data) {
+      return data.stationName is string
+        && data.logoText is string
+        && data.phone is string
+        && data.address is string
+        && data.currency is string
+        && data.tariffs is map
+        && data.tariffs.residential is number
+        && data.tariffs.commercial is number
+        && data.tariffs.industrial is number
+        && data.fixedFee is number
+        && data.taxPercent is number
+        && data.serviceFee is number;
+    }
+
+    function isValidAuditLog(data) {
+      return data.id is string && data.id.size() <= 100
+        && (!('userId' in data) || (data.userId is string && data.userId.size() <= 100))
+        && (!('username' in data) || (data.username is string && data.username.size() <= 100))
+        && data.action is string && data.action.size() <= 200
+        && data.details is string && data.details.size() <= 500
+        && data.timestamp is string && data.timestamp.size() <= 50
+        && data.keys().hasAll(['id', 'action', 'details', 'timestamp']);
+    }
+
+    function isValidTreasuryTransfer(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.transferNumber is string
+        && data.date is string
+        && data.fromAccount is string
+        && data.toAccount is string
+        && data.amount is number
+        && data.notes is string
+        && data.recordedBy is string;
+    }
+
+    function isValidExpense(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.amount is number
+        && data.category is string
+        && data.date is string
+        && data.description is string
+        && data.recordedBy is string;
+    }
+
+    function isValidPurchase(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.amount is number
+        && data.items is string
+        && data.date is string
+        && data.supplier is string
+        && data.recordedBy is string;
+    }
+
+    function isValidJournalEntry(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.voucherNumber is string
+        && data.date is string
+        && data.type is string
+        && data.typeLabel is string
+        && data.debitAccountCode is string
+        && data.debitAccountName is string
+        && data.creditAccountCode is string
+        && data.creditAccountName is string
+        && data.amount is number
+        && data.description is string
+        && data.recordedBy is string;
+    }
+
+    function isValidEmployee(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.name is string
+        && data.role is string
+        && data.phone is string
+        && data.salary is number
+        && data.status is string
+        && data.joinDate is string;
+    }
+
+    function isValidEmployeeTx(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.employeeId is string
+        && data.employeeName is string
+        && data.type is string
+        && data.amount is number
+        && data.date is string
+        && data.description is string
+        && data.recordedBy is string;
+    }
+
+    function isValidConnection(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.subscriberId is string
+        && data.subscriberName is string
+        && data.totalFee is number
+        && data.paidAmount is number
+        && data.date is string
+        && data.materialsUsed is string
+        && data.status is string;
+    }
+
+    function isValidTechRequest(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.type is string
+        && data.status is string
+        && data.applicantName is string
+        && data.phone is string
+        && data.address is string
+        && data.description is string
+        && data.createdAt is string;
+    }
+
+    function isValidInventoryItem(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.name is string
+        && data.category is string
+        && data.quantity is number
+        && data.unit is string
+        && data.minAlertLevel is number
+        && data.lastUpdated is string;
+    }
+
+    function isValidInventoryTransaction(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.itemId is string
+        && data.itemName is string
+        && data.type is string
+        && data.quantity is number
+        && data.date is string
+        && data.user is string;
+    }
+
+    // Rules for each collection
+    match /users/{userId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(userId) && isValidUser(incoming());
+      allow delete: if isValidId(userId);
+    }
+
+    match /subscribers/{subscriberId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(subscriberId) && isValidSubscriber(incoming());
+      allow delete: if isValidId(subscriberId);
+    }
+
+    match /readings/{readingId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(readingId) && isValidMeterReading(incoming());
+      allow delete: if isValidId(readingId);
+    }
+
+    match /payments/{paymentId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(paymentId) && isValidPayment(incoming());
+      allow delete: if isValidId(paymentId);
+    }
+
+    match /settings/{settingsId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(settingsId);
+      allow delete: if isValidId(settingsId);
+    }
+
+    match /audit_logs/{logId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(logId) && isValidAuditLog(incoming());
+      allow delete: if isValidId(logId);
+    }
+
+    match /treasury_transfers/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id) && isValidTreasuryTransfer(incoming());
+      allow delete: if isValidId(id);
+    }
+
+    match /expenses/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id) && isValidExpense(incoming());
+      allow delete: if isValidId(id);
+    }
+
+    match /purchases/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id) && isValidPurchase(incoming());
+      allow delete: if isValidId(id);
+    }
+
+    match /manual_journal_entries/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id) && isValidJournalEntry(incoming());
+      allow delete: if isValidId(id);
+    }
+
+    match /employees/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id) && isValidEmployee(incoming());
+      allow delete: if isValidId(id);
+    }
+
+    match /employee_txs/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id) && isValidEmployeeTx(incoming());
+      allow delete: if isValidId(id);
+    }
+
+    match /connections/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id) && isValidConnection(incoming());
+      allow delete: if isValidId(id);
+    }
+
+    match /tech_requests/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id) && isValidTechRequest(incoming());
+      allow delete: if isValidId(id);
+    }
+
+    match /inventory/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id) && isValidInventoryItem(incoming());
+      allow delete: if isValidId(id);
+    }
+
+    match /inventory_transactions/{id} {
+      allow get, list: if true;
+      allow create, update: if isValidId(id) && isValidInventoryTransaction(incoming());
+      allow delete: if isValidId(id);
+    }
+  }
+}

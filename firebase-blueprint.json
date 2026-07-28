@@ -1,0 +1,344 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User entity representing administrators or collectors",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique user ID" },
+        "username": { "type": "string", "description": "Unique lowercase identifier" },
+        "passwordHash": { "type": "string", "description": "Password string/hash" },
+        "role": { "type": "string", "enum": ["admin", "collector"] },
+        "name": { "type": "string", "description": "Display name of the user" },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "permissions": { "type": "array", "description": "List of permission strings" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "username", "passwordHash", "role", "name", "status", "permissions", "createdAt"]
+    },
+    "Subscriber": {
+      "title": "Subscriber",
+      "description": "Subscriber details representing consumers of the electricity service",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "meterNumber": { "type": "string" },
+        "zone": { "type": "string" },
+        "tariffType": { "type": "string", "enum": ["residential", "commercial", "industrial"] },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "initialReading": { "type": "number" },
+        "currentReading": { "type": "number" },
+        "currentBalance": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "phone", "meterNumber", "zone", "tariffType", "status", "initialReading", "currentReading", "currentBalance", "createdAt"]
+    },
+    "MeterReading": {
+      "title": "Meter Reading",
+      "description": "Electricity meter readings entered by collectors",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "subscriberId": { "type": "string" },
+        "subscriberName": { "type": "string" },
+        "meterNumber": { "type": "string" },
+        "previousReading": { "type": "number" },
+        "currentReading": { "type": "number" },
+        "consumption": { "type": "number" },
+        "ratePerKwh": { "type": "number" },
+        "fixedFee": { "type": "number" },
+        "taxAmount": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "billingMonth": { "type": "string" },
+        "readingDate": { "type": "string", "format": "date-time" },
+        "enteredBy": { "type": "string" },
+        "isPosted": { "type": "boolean" },
+        "postedDate": { "type": "string" }
+      },
+      "required": ["id", "subscriberId", "subscriberName", "meterNumber", "previousReading", "currentReading", "consumption", "ratePerKwh", "fixedFee", "taxAmount", "totalAmount", "billingMonth", "readingDate", "enteredBy", "isPosted"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Payment transactions received from subscribers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "subscriberId": { "type": "string" },
+        "subscriberName": { "type": "string" },
+        "amountPaid": { "type": "number" },
+        "paymentDate": { "type": "string", "format": "date-time" },
+        "paymentMethod": { "type": "string", "enum": ["cash", "transfer", "e-wallet"] },
+        "receivedBy": { "type": "string" },
+        "receiptNumber": { "type": "string" },
+        "isPosted": { "type": "boolean" },
+        "postedDate": { "type": "string" }
+      },
+      "required": ["id", "subscriberId", "subscriberName", "amountPaid", "paymentDate", "paymentMethod", "receivedBy", "receiptNumber", "isPosted"]
+    },
+    "SystemSettings": {
+      "title": "System Settings",
+      "description": "Configuration settings for the electrical commercial system",
+      "type": "object",
+      "properties": {
+        "stationName": { "type": "string" },
+        "logoText": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "currency": { "type": "string" },
+        "tariffs": {
+          "type": "object",
+          "properties": {
+            "residential": { "type": "number" },
+            "commercial": { "type": "number" },
+            "industrial": { "type": "number" }
+          },
+          "required": ["residential", "commercial", "industrial"]
+        },
+        "fixedFee": { "type": "number" },
+        "taxPercent": { "type": "number" },
+        "serviceFee": { "type": "number" }
+      },
+      "required": ["stationName", "logoText", "phone", "address", "currency", "tariffs", "fixedFee", "taxPercent", "serviceFee"]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "System event audit trail logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "username", "action", "details", "timestamp"]
+    },
+    "TreasuryTransfer": {
+      "title": "Treasury Transfer",
+      "description": "Funds transfer or deposit voucher from collector or vault to treasury",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "transferNumber": { "type": "string" },
+        "date": { "type": "string" },
+        "fromAccount": { "type": "string" },
+        "toAccount": { "type": "string" },
+        "amount": { "type": "number" },
+        "notes": { "type": "string" },
+        "recordedBy": { "type": "string" }
+      },
+      "required": ["id", "transferNumber", "date", "fromAccount", "toAccount", "amount", "notes", "recordedBy"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Operational expenses voucher",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "date": { "type": "string" },
+        "description": { "type": "string" },
+        "recordedBy": { "type": "string" }
+      },
+      "required": ["id", "amount", "category", "date", "description", "recordedBy"]
+    },
+    "Purchase": {
+      "title": "Purchase",
+      "description": "Purchases and supply invoice",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "amount": { "type": "number" },
+        "items": { "type": "string" },
+        "date": { "type": "string" },
+        "supplier": { "type": "string" },
+        "recordedBy": { "type": "string" }
+      },
+      "required": ["id", "amount", "items", "date", "supplier", "recordedBy"]
+    },
+    "JournalEntry": {
+      "title": "Journal Entry",
+      "description": "Manual or automatic journal entry voucher",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "voucherNumber": { "type": "string" },
+        "date": { "type": "string" },
+        "type": { "type": "string" },
+        "typeLabel": { "type": "string" },
+        "debitAccountCode": { "type": "string" },
+        "debitAccountName": { "type": "string" },
+        "creditAccountCode": { "type": "string" },
+        "creditAccountName": { "type": "string" },
+        "amount": { "type": "number" },
+        "description": { "type": "string" },
+        "recordedBy": { "type": "string" }
+      },
+      "required": ["id", "voucherNumber", "date", "type", "typeLabel", "debitAccountCode", "debitAccountName", "creditAccountCode", "creditAccountName", "amount", "description", "recordedBy"]
+    },
+    "Employee": {
+      "title": "Employee",
+      "description": "Employee or staff details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "phone": { "type": "string" },
+        "salary": { "type": "number" },
+        "status": { "type": "string" },
+        "joinDate": { "type": "string" }
+      },
+      "required": ["id", "name", "role", "phone", "salary", "status", "joinDate"]
+    },
+    "EmployeeTransaction": {
+      "title": "Employee Transaction",
+      "description": "Payroll, salary advances or bonuses for employees",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "type": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "description": { "type": "string" },
+        "recordedBy": { "type": "string" }
+      },
+      "required": ["id", "employeeId", "employeeName", "type", "amount", "date", "description", "recordedBy"]
+    },
+    "ServiceConnection": {
+      "title": "Service Connection",
+      "description": "Subscription and meter installation connections",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "subscriberId": { "type": "string" },
+        "subscriberName": { "type": "string" },
+        "totalFee": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "date": { "type": "string" },
+        "materialsUsed": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "subscriberId", "subscriberName", "totalFee", "paidAmount", "date", "materialsUsed", "status"]
+    },
+    "TechnicalRequest": {
+      "title": "Technical Request",
+      "description": "Operation and maintenance work orders",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "status": { "type": "string" },
+        "applicantName": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "type", "status", "applicantName", "phone", "address", "description", "createdAt"]
+    },
+    "InventoryItem": {
+      "title": "Inventory Item",
+      "description": "Catalog item in warehouse inventory",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "minAlertLevel": { "type": "number" },
+        "lastUpdated": { "type": "string" }
+      },
+      "required": ["id", "name", "category", "quantity", "unit", "minAlertLevel", "lastUpdated"]
+    },
+    "InventoryTransaction": {
+      "title": "Inventory Transaction",
+      "description": "Stock movement or material release voucher",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "itemId": { "type": "string" },
+        "itemName": { "type": "string" },
+        "type": { "type": "string" },
+        "quantity": { "type": "number" },
+        "date": { "type": "string" },
+        "user": { "type": "string" }
+      },
+      "required": ["id", "itemId", "itemName", "type", "quantity", "date", "user"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "User",
+      "description": "Collection of administrators and collectors"
+    },
+    "subscribers": {
+      "schema": "Subscriber",
+      "description": "Collection of consumers/subscribers of electricity"
+    },
+    "readings": {
+      "schema": "MeterReading",
+      "description": "Collection of recorded meter readings"
+    },
+    "payments": {
+      "schema": "Payment",
+      "description": "Collection of financial payments by subscribers"
+    },
+    "settings": {
+      "schema": "SystemSettings",
+      "description": "Global settings for station, logo, tariffs, and taxes"
+    },
+    "audit_logs": {
+      "schema": "AuditLog",
+      "description": "Log of actions performed in the system"
+    },
+    "treasury_transfers": {
+      "schema": "TreasuryTransfer",
+      "description": "Fund transfers and treasury deposits"
+    },
+    "expenses": {
+      "schema": "Expense",
+      "description": "Operational expense vouchers"
+    },
+    "purchases": {
+      "schema": "Purchase",
+      "description": "Supply and purchase vouchers"
+    },
+    "manual_journal_entries": {
+      "schema": "JournalEntry",
+      "description": "Accounting journal entries"
+    },
+    "employees": {
+      "schema": "Employee",
+      "description": "Station staff and employees list"
+    },
+    "employee_txs": {
+      "schema": "EmployeeTransaction",
+      "description": "Payroll and advance payments for staff"
+    },
+    "connections": {
+      "schema": "ServiceConnection",
+      "description": "Connection fees and installation records"
+    },
+    "tech_requests": {
+      "schema": "TechnicalRequest",
+      "description": "Maintenance and new connection work orders"
+    },
+    "inventory": {
+      "schema": "InventoryItem",
+      "description": "Warehouse materials stock"
+    },
+    "inventory_transactions": {
+      "schema": "InventoryTransaction",
+      "description": "Stock movement logs"
+    }
+  }
+}
